@@ -1,0 +1,5 @@
+---
+- name: Test play
+  hosts: virtualmaschines
+  roles:
+    - signalcli

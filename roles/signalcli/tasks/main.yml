@@ -1,0 +1,48 @@
+---
+- name: Install req Ubuntu 22
+  ansible.builtin.apt:
+    name: openjdk-18-jre
+    state: present
+  become: true
+  when: ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "22"
+
+- name: Install req Ubuntu older
+  ansible.builtin.apt:
+    name: default-jre
+    state: present
+  become: true
+  when: ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] != "22"
+
+- name: Ensure User
+  ansible.builtin.user:
+    name: signal-cli
+    system: true
+    state: present
+  become: true
+
+- name: Fetch release
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/AsamK/signal-cli/releases/latest
+    return_content: true
+  register: json_reponse
+
+- name: Download release files
+  ansible.builtin.get_url:
+    url: "{{ json_reponse.json.tarball_url }}"
+    dest: /tmp/signal-cli-latest.tar.gz
+    mode: 0644
+  become: true
+  become_user: signal-cli
+
+- name: Unpack
+  ansible.builtin.unarchive:
+    src: /tmp/signal-cli-latest.tar.gz
+    dest: /tmp/signal-clit-latest
+  become: true
+  become_user: signal-cli
+
+- name: Unpack
+  ansible.builtin.unarchive:
+    src: "/tmp/signal-cli-latest/signal-cli-*-Linux.tar.gz"
+    dest: /opt/signal-cli
+  become: true
