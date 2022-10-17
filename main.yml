@@ -1,0 +1,58 @@
+---
+- name: Signal-cli
+  hosts: strato
+  remote_user: josha
+  environment:
+    VERSION: 0.11.3
+    SERVICE_USER: signal-cli
+    SERVICE_GROUP: signal-cli
+    DIR: /usr/local/
+
+  tasks:
+    - name: Ensure system user
+      ansible.builtin.user:
+        name: signal-cli
+        groups: signal-cli
+        system: yes
+        state: present
+    - name: Deps
+      ansible.builtin.package:
+        name: defautl-jre 
+        state: present
+      become: true
+    - name: Fetch latest build
+      ansible.builtin.get_url:
+        url: "wget https://github.com/AsamK/signal-cli/releases/download/v{{ VERSION }}/signal-cli-{{ VERSION }}-Linux.tar.gz"
+        dest: /tmp/signal.tar.gz
+    - name: Unpack
+      ansible.builtin.unarchive:
+        src: /tmp/signal.tar.gz
+        dest: /opt
+      become: true
+    - name: Link executable
+      ansible.builtin.file:
+        src: /opt/signal-cli-"${VERSION}"/bin/signal-cli
+        dest: /usr/local/bin/
+        state: link
+        force: yes
+      become: true
+    - name: Install download configs
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/AsamK/signal-cli/v{{ VERSION }}/data/{{ item }}"
+        dest: "/tmp/{{ item }}"
+      loop:
+        - org.asamk.Signal.conf
+        - org.asamk.Signal.service
+        - signal-cli.service
+    - name: Move configs into place
+      ansible.builtin.file:
+        src: "/tmp/{{ item.name }}"
+        dest: "{{ item.path }}"
+      loop:
+        - name: org.asamk.Signal.conf
+          path: /etc/dbus-1/system.d/
+        - name: org.asamk.Signal.service
+          path: /usr/share/dbus-1/system-services/
+    - name: Place templated service-file
+      ansible.builtin.template:
+

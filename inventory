@@ -1,0 +1,5 @@
+[strato]
+Terror ansible_user=josha
+
+[web:children]
+strato
